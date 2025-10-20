@@ -108,22 +108,30 @@ def main():
 
     generated_mp3s = []
 
-    for txt_input in args.input_txts:
-        path = Path(txt_input)
-        if path.is_dir():
-            text_files = sorted(p for p in path.glob("*.txt") if p.is_file())
-            if not text_files:
-                print(f"⚠️ No .txt files found in folder: {path}")
-            for txt_path in text_files:
-                mp3 = text_file_to_mp3(txt_path, args.model, args.voice, args.lang, args.bitrate, args.speed)
-                if mp3:
-                    generated_mp3s.append(mp3)
-        elif path.suffix.lower() == ".txt" and path.is_file():
-            mp3 = text_file_to_mp3(path, args.model, args.voice, args.lang, args.bitrate, args.speed)
-            if mp3:
-                generated_mp3s.append(mp3)
-        else:
-            print(f"⚠️ Skipping: {txt_input}")
+    def iter_txts(inputs: list[str]):
+        for item in inputs:
+            path = Path(item)
+            if path.is_dir():
+                txts = sorted(p for p in path.glob("*.txt") if p.is_file())
+                if not txts:
+                    print(f"⚠️ No .txt files found in directory: {path}")
+                for txt in txts:
+                    yield txt
+            elif path.suffix.lower() == ".txt" and path.is_file():
+                yield path
+            else:
+                print(f"⚠️ Skipping: {item}")
+
+    for txt_path in iter_txts(args.input_txts):
+        mp3_path = txt_path.with_suffix(".mp3")
+        if mp3_path.exists():
+            print(f"⏭️ MP3 already exists, skipping generation: {mp3_path.name}")
+            generated_mp3s.append(mp3_path)
+            continue
+
+        mp3 = text_file_to_mp3(txt_path, args.model, args.voice, args.lang, args.bitrate, args.speed)
+        if mp3:
+            generated_mp3s.append(mp3)
 
     if should_concat and generated_mp3s:
         concat_mp3s(generated_mp3s, Path(args.output))
