@@ -88,8 +88,8 @@ def main():
     parser = argparse.ArgumentParser(
         description="Convert one or more .txt files to MP3 using mlx-audio TTS"
     )
-    parser.add_argument("input_txts", nargs="+", help="Path(s) to .txt file(s)")
-    parser.add_argument("--output", required=True, help="Final output MP3 file (e.g., all_audio.mp3)")
+    parser.add_argument("input_txts", nargs="+", help="Path(s) to .txt file(s) or folders containing them")
+    parser.add_argument("--output", help="Final output MP3 file (e.g., all_audio.mp3)")
     parser.add_argument("--model", default="prince-canuma/Kokoro-82M", help="Model path or repo ID")
     parser.add_argument("--voice", default="af_heart", help="Voice style to use")
     parser.add_argument("--speed", type=float, default=1.0, help="Speaking speed (default: 1.0, range: 0.5 to 2.0)")
@@ -98,18 +98,34 @@ def main():
     parser.add_argument("--no-concat", action="store_true", help="Skip concatenating all MP3s into a single file")
 
     args = parser.parse_args()
+
+    should_concat = bool(args.output) and not args.no_concat
+    if not should_concat and not args.no_concat:
+        print("ℹ️ No --output provided; skipping concatenation.")
+        args.no_concat = True
+    elif args.no_concat and args.output:
+        print("ℹ️ --output is ignored when --no-concat is provided.")
+
     generated_mp3s = []
 
-    for txt_file in args.input_txts:
-        path = Path(txt_file)
-        if path.suffix.lower() == ".txt" and path.is_file():
+    for txt_input in args.input_txts:
+        path = Path(txt_input)
+        if path.is_dir():
+            text_files = sorted(p for p in path.glob("*.txt") if p.is_file())
+            if not text_files:
+                print(f"⚠️ No .txt files found in folder: {path}")
+            for txt_path in text_files:
+                mp3 = text_file_to_mp3(txt_path, args.model, args.voice, args.lang, args.bitrate, args.speed)
+                if mp3:
+                    generated_mp3s.append(mp3)
+        elif path.suffix.lower() == ".txt" and path.is_file():
             mp3 = text_file_to_mp3(path, args.model, args.voice, args.lang, args.bitrate, args.speed)
             if mp3:
                 generated_mp3s.append(mp3)
         else:
-            print(f"⚠️ Skipping: {txt_file}")
+            print(f"⚠️ Skipping: {txt_input}")
 
-    if not args.no_concat and generated_mp3s:
+    if should_concat and generated_mp3s:
         concat_mp3s(generated_mp3s, Path(args.output))
     elif args.no_concat:
         print("🛑 Concatenation skipped.")
