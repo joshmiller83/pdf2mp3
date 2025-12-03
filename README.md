@@ -1,5 +1,9 @@
 # 🗣️ `pdf2mp3` — PDF to Natural Speech MP3s
 
+![Tests](https://github.com/joshmiller83/pdf2txt/actions/workflows/tests.yml/badge.svg)
+![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
+
 A CLI-based toolchain for converting multipage PDFs (like AWS whitepapers or reports) into clean, page-grouped MP3 audio files using `mlx-audio`.
 
 This tool:
@@ -123,6 +127,31 @@ audio_output/
 | `split_pdf.py`      | Extracts and splits PDF text by page            |
 | `generate_audio.py` | Converts groups of `.txt` files into one `.mp3` |
 | `process_pdf.py`    | Orchestrates everything: PDF → grouped MP3s     |
+
+## 🧪 Testing
+
+This project includes a comprehensive test suite with 94 automated tests:
+
+```bash
+# Run all tests
+pytest
+
+# Run with coverage
+pytest --cov=. --cov-report=html
+
+# Use the test runner script
+./run_tests.sh
+```
+
+See [TESTING.md](TESTING.md) for detailed testing documentation.
+
+### Continuous Integration
+
+Tests run automatically on every push and pull request to the main branch via GitHub Actions:
+- ✅ Tested on Ubuntu and macOS
+- ✅ Tested with Python 3.10, 3.11, and 3.12
+- ✅ Coverage reports generated automatically
+- ✅ Code linting with ruff
 
 ## 🛠️ Tips & Troubleshooting
 
