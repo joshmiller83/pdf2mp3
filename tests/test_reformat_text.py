@@ -76,8 +76,22 @@ class TestShouldStartNewParagraph:
         assert should_start_new_paragraph("Previous text.", "CHAPTER ONE")
 
     def test_single_word_headline_no_paragraph(self):
-        """Test that single word all-caps doesn't start paragraph"""
-        assert not should_start_new_paragraph("Previous text.", "AND")
+        """Test that single word all-caps behavior"""
+        # Single word all-caps is not treated as headline (requires 2+ words)
+        # "AND" (all caps) is NOT a continuation word (only "And" title case is)
+        # So after sentence ending (period), "AND" starts a new paragraph
+        result = should_start_new_paragraph("Previous text.", "AND")
+        assert result == True, "AND (all caps) is not a continuation word"
+
+        # But "And" (title case) IS a continuation word
+        result = should_start_new_paragraph("Previous text.", "And this continues")
+        assert result == False, "And (title case) is a continuation word"
+
+        # Test with non-continuation single word after punctuation
+        assert should_start_new_paragraph("Previous text.", "WORD")
+
+        # Test single word without previous punctuation - no new paragraph
+        assert not should_start_new_paragraph("Previous text without punctuation", "WORD")
 
     def test_sentence_ending_starts_paragraph(self):
         """Test that new sentence after period starts paragraph"""
@@ -172,11 +186,13 @@ class TestCleanText:
         lines = [
             "Introduction text here.",
             "SECTION ONE",
+            "",  # Blank line to separate
             "Section content."
         ]
         result = clean_text(lines)
         assert len(result) == 3
         assert "SECTION ONE" in result[1]
+        assert "Section content." in result[2]
 
     def test_join_lines_within_paragraph(self):
         """Test that lines within paragraph are joined with spaces"""
@@ -225,12 +241,13 @@ class TestCleanText:
         ]
         result = clean_text(lines)
 
-        # Should have: INTRODUCTION, intro paragraph, MAIN CONTENT,
-        # main content intro, 2 list items, conclusion
-        assert len(result) >= 6
+        # Should have: INTRODUCTION, intro sentence 1, intro sentence 2,
+        # MAIN CONTENT, main content intro, 2 list items, conclusion
+        assert len(result) >= 7
         assert "INTRODUCTION" in result[0]
         assert "introduction" in result[1]
-        assert "MAIN CONTENT" in result[2]
+        assert "It has multiple sentences." in result[2]
+        assert "MAIN CONTENT" in result[3]
 
 
 class TestWriteOutput:

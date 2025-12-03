@@ -68,13 +68,8 @@ class TestExtractSentencesFromPdf:
         with tempfile.TemporaryDirectory() as tmpdir:
             yield tmpdir
 
-    @pytest.fixture
-    def mock_pdf_reader(self):
-        """Create a mock PDF reader"""
-        with patch('split_pdf.PdfReader') as mock_reader:
-            yield mock_reader
-
-    def test_creates_output_directory(self, temp_output_dir, mock_pdf_reader):
+    @patch('split_pdf.PdfReader')
+    def test_creates_output_directory(self, mock_reader, temp_output_dir):
         """Test that output directory is created if it doesn't exist"""
         output_dir = os.path.join(temp_output_dir, "new_dir")
 
@@ -87,7 +82,8 @@ class TestExtractSentencesFromPdf:
 
         assert os.path.exists(output_dir)
 
-    def test_extracts_multiple_pages(self, temp_output_dir, mock_pdf_reader):
+    @patch('split_pdf.PdfReader')
+    def test_extracts_multiple_pages(self, mock_reader, temp_output_dir):
         """Test that multiple pages are extracted correctly"""
         # Mock PDF with 3 pages
         mock_pages = []
@@ -106,7 +102,8 @@ class TestExtractSentencesFromPdf:
         assert os.path.exists(os.path.join(temp_output_dir, "page_2.txt"))
         assert os.path.exists(os.path.join(temp_output_dir, "page_3.txt"))
 
-    def test_handles_empty_pages(self, temp_output_dir, mock_pdf_reader, capsys):
+    @patch('split_pdf.PdfReader')
+    def test_handles_empty_pages(self, mock_reader, temp_output_dir, capsys):
         """Test that empty pages are handled gracefully"""
         # Mock PDF with one empty page
         mock_page = Mock()
@@ -118,7 +115,8 @@ class TestExtractSentencesFromPdf:
         captured = capsys.readouterr()
         assert "Page 1 is empty or unreadable" in captured.out
 
-    def test_handles_none_text(self, temp_output_dir, mock_pdf_reader, capsys):
+    @patch('split_pdf.PdfReader')
+    def test_handles_none_text(self, mock_reader, temp_output_dir, capsys):
         """Test that pages returning None are handled gracefully"""
         # Mock PDF with one page returning None
         mock_page = Mock()
@@ -130,8 +128,9 @@ class TestExtractSentencesFromPdf:
         captured = capsys.readouterr()
         assert "Page 1 is empty or unreadable" in captured.out
 
+    @patch('split_pdf.PdfReader')
     @patch('split_pdf.sent_tokenize')
-    def test_tokenizes_sentences(self, mock_tokenize, temp_output_dir, mock_pdf_reader):
+    def test_tokenizes_sentences(self, mock_tokenize, mock_reader, temp_output_dir):
         """Test that text is tokenized into sentences"""
         mock_page = Mock()
         mock_page.extract_text.return_value = "First sentence. Second sentence."
@@ -151,7 +150,8 @@ class TestExtractSentencesFromPdf:
         lines = content.strip().split("\n")
         assert len(lines) == 2
 
-    def test_file_encoding_utf8(self, temp_output_dir, mock_pdf_reader):
+    @patch('split_pdf.PdfReader')
+    def test_file_encoding_utf8(self, mock_reader, temp_output_dir):
         """Test that files are written with UTF-8 encoding"""
         mock_page = Mock()
         mock_page.extract_text.return_value = "Test with unicode: café, naïve, 中文"
@@ -167,7 +167,8 @@ class TestExtractSentencesFromPdf:
         assert "naïve" in content
         assert "中文" in content
 
-    def test_output_file_naming(self, temp_output_dir, mock_pdf_reader):
+    @patch('split_pdf.PdfReader')
+    def test_output_file_naming(self, mock_reader, temp_output_dir):
         """Test that output files are named correctly with page numbers"""
         mock_pages = [Mock() for _ in range(10)]
         for i, page in enumerate(mock_pages):
@@ -181,8 +182,9 @@ class TestExtractSentencesFromPdf:
         for i in range(1, 11):
             assert os.path.exists(os.path.join(temp_output_dir, f"page_{i}.txt"))
 
+    @patch('split_pdf.PdfReader')
     @patch('split_pdf.sent_tokenize')
-    def test_strips_sentence_whitespace(self, mock_tokenize, temp_output_dir, mock_pdf_reader):
+    def test_strips_sentence_whitespace(self, mock_tokenize, mock_reader, temp_output_dir):
         """Test that sentences are stripped of extra whitespace"""
         mock_page = Mock()
         mock_page.extract_text.return_value = "Test"
