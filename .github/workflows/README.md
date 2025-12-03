@@ -14,10 +14,17 @@ Runs on every push and pull request to main/master branches.
 
 **Status**: 🟢 Active
 
-### `badge.yml` - Test Status Badge
+### `badge.yml.disabled` - Test Status Badge (Optional)
 Generates a dynamic badge showing test status.
 
-**Status**: ⚠️ Requires setup (see [CICD.md](../CICD.md))
+**Status**: 🔴 Disabled by default (requires setup)
+
+**To enable**:
+1. Follow setup instructions in [GITHUB_ACTIONS_SETUP.md](../../GITHUB_ACTIONS_SETUP.md)
+2. Rename `badge.yml.disabled` to `badge.yml`
+3. Commit and push
+
+**Note**: The main `tests.yml` workflow already shows test status - this badge is completely optional.
 
 ## Quick Start
 
