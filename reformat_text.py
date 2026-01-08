@@ -126,26 +126,46 @@ def write_output(original_path: Path, paragraphs: list[str]):
             f.write(para.strip() + "\n\n")
     print(f"✅ Cleaned version saved as: {output_path}")
 
-def main():
-    parser = argparse.ArgumentParser(description="Reformat bad line breaks and paragraphs in plain text.")
-    parser.add_argument("input_file", type=str, help="Path to the original .txt file")
-    args = parser.parse_args()
-
-    input_path = Path(args.input_file)
-    if not input_path.exists():
-        print(f"❌ File not found: {input_path}")
-        return
-
+def reformat_file(input_path: Path):
+    """Processes a single .txt or .md file."""
     with open(input_path, "r", encoding="utf-8") as f:
         raw_lines = f.readlines()
 
     # Preprocess if markdown
     if input_path.suffix.lower() == '.md':
-        print(f"ℹ️ Detected Markdown file. Removing frontmatter and transforming headers...")
+        print(f"ℹ️ Processing Markdown file: {input_path}")
         raw_lines = preprocess_markdown(raw_lines)
+    else:
+        print(f"ℹ️ Processing Text file: {input_path}")
 
     cleaned_paragraphs = clean_text(raw_lines)
     write_output(input_path, cleaned_paragraphs)
+
+def main():
+    parser = argparse.ArgumentParser(description="Reformat bad line breaks and paragraphs in plain text.")
+    parser.add_argument("input_path", type=str, help="Path to the original .txt or .md file, or a directory containing them")
+    args = parser.parse_args()
+
+    input_path = Path(args.input_path)
+    if not input_path.exists():
+        print(f"❌ Path not found: {input_path}")
+        return
+
+    if input_path.is_dir():
+        print(f"📁 Processing directory: {input_path}")
+        # Find all .txt and .md files in the directory
+        txt_files = list(input_path.glob("*.txt"))
+        md_files = list(input_path.glob("*.md"))
+        files_to_process = sorted(txt_files + md_files)
+        
+        if not files_to_process:
+            print(f"⚠️ No .txt or .md files found in {input_path}")
+            return
+        
+        for file_path in files_to_process:
+            reformat_file(file_path)
+    else:
+        reformat_file(input_path)
 
 if __name__ == "__main__":
     main()
