@@ -260,14 +260,14 @@ class TestWriteOutput:
             yield tmpdir
 
     def test_creates_cleaned_file(self, temp_dir):
-        """Test that output file is created with _cleaned suffix"""
+        """Test that output file is created in clean/ directory"""
         original_path = Path(temp_dir) / "test.txt"
         original_path.touch()
 
         paragraphs = ["First paragraph.", "Second paragraph."]
         write_output(original_path, paragraphs)
 
-        expected_path = Path(temp_dir) / "test_cleaned.txt"
+        expected_path = Path(temp_dir) / "clean" / "test.txt"
         assert expected_path.exists()
 
     def test_writes_paragraphs_with_blank_lines(self, temp_dir):
@@ -278,7 +278,7 @@ class TestWriteOutput:
         paragraphs = ["First paragraph.", "Second paragraph.", "Third paragraph."]
         write_output(original_path, paragraphs)
 
-        expected_path = Path(temp_dir) / "test_cleaned.txt"
+        expected_path = Path(temp_dir) / "clean" / "test.txt"
         with open(expected_path, "r", encoding="utf-8") as f:
             content = f.read()
 
@@ -295,7 +295,7 @@ class TestWriteOutput:
         paragraphs = ["Unicode test: café, naïve, 中文"]
         write_output(original_path, paragraphs)
 
-        expected_path = Path(temp_dir) / "test_cleaned.txt"
+        expected_path = Path(temp_dir) / "clean" / "test.txt"
         with open(expected_path, "r", encoding="utf-8") as f:
             content = f.read()
 
@@ -311,7 +311,7 @@ class TestWriteOutput:
         paragraphs = ["  First paragraph.  ", " Second paragraph. "]
         write_output(original_path, paragraphs)
 
-        expected_path = Path(temp_dir) / "test_cleaned.txt"
+        expected_path = Path(temp_dir) / "clean" / "test.txt"
         with open(expected_path, "r", encoding="utf-8") as f:
             lines = f.readlines()
 
@@ -325,7 +325,7 @@ class TestWriteOutput:
         paragraphs = []
         write_output(original_path, paragraphs)
 
-        expected_path = Path(temp_dir) / "test_cleaned.txt"
+        expected_path = Path(temp_dir) / "clean" / "test.txt"
         assert expected_path.exists()
 
         with open(expected_path, "r", encoding="utf-8") as f:
@@ -372,7 +372,7 @@ The document ends here."""
         write_output(input_path, cleaned_paragraphs)
 
         # Verify output
-        output_path = Path(temp_dir) / "messy_cleaned.txt"
+        output_path = Path(temp_dir) / "clean" / "messy.txt"
         assert output_path.exists()
 
         with open(output_path, "r", encoding="utf-8") as f:
@@ -406,7 +406,7 @@ Unicode: ñ, é, ü, 日本語"""
         cleaned_paragraphs = clean_text(raw_lines)
         write_output(input_path, cleaned_paragraphs)
 
-        output_path = Path(temp_dir) / "special_cleaned.txt"
+        output_path = Path(temp_dir) / "clean" / "special.txt"
         with open(output_path, "r", encoding="utf-8") as f:
             output_content = f.read()
 

@@ -23,6 +23,62 @@ def should_start_new_paragraph(prev_line: str, curr_line: str) -> bool:
             return True
     return False
 
+def strip_formatting(text: str) -> str:
+    """
+    Removes HTML tags and Markdown formatting (bold, italic, inline code).
+    """
+    # Remove HTML tags
+    text = re.sub(r'<[^>]+>', '', text)
+    # Remove bold (**text** or __text__)
+    text = re.sub(r'(\*\*|__)(.*?)\1', r'\2', text)
+    # Remove italic (*text* or _text_)
+    text = re.sub(r'(\*|_)(.*?)\1', r'\2', text)
+    # Remove inline code (`text`)
+    text = re.sub(r'`(.*?)`', r'\1', text)
+    return text
+
+def preprocess_markdown(lines: list[str]) -> list[str]:
+    """
+    Removes YAML frontmatter and transforms Markdown headers.
+    """
+    # 1. Remove YAML frontmatter if present
+    # Check if first line is '---'
+    if lines and lines[0].strip() == '---':
+        # Find the next '---'
+        end_idx = -1
+        for i in range(1, len(lines)):
+            if lines[i].strip() == '---':
+                end_idx = i
+                break
+        
+        if end_idx != -1:
+            # Remove everything from 0 to end_idx (inclusive)
+            lines = lines[end_idx + 1:]
+
+    # 2. Replace headers and strip formatting
+    # #### -> Header level 4:
+    # ###  -> Header Level 3:
+    # ##   -> Header Level 2:
+    # #    -> Header Level 1:
+    
+    processed_lines = []
+    for line in lines:
+        # Transform headers first
+        if line.startswith('#### '):
+            line = "Header level 4: " + line[5:]
+        elif line.startswith('### '):
+            line = "Header Level 3: " + line[4:]
+        elif line.startswith('## '):
+            line = "Header Level 2: " + line[3:]
+        elif line.startswith('# '):
+            line = "Header Level 1: " + line[2:]
+        
+        # Strip formatting from the line
+        line = strip_formatting(line)
+        processed_lines.append(line)
+            
+    return processed_lines
+
 def clean_text(lines: list[str]) -> list[str]:
     paragraphs = []
     buffer = ""
@@ -61,7 +117,10 @@ def clean_text(lines: list[str]) -> list[str]:
     return paragraphs
 
 def write_output(original_path: Path, paragraphs: list[str]):
-    output_path = original_path.with_name(original_path.stem + "_cleaned.txt")
+    clean_dir = original_path.parent / "clean"
+    clean_dir.mkdir(exist_ok=True)
+    
+    output_path = clean_dir / (original_path.stem + ".txt")
     with open(output_path, "w", encoding="utf-8") as f:
         for para in paragraphs:
             f.write(para.strip() + "\n\n")
@@ -79,6 +138,11 @@ def main():
 
     with open(input_path, "r", encoding="utf-8") as f:
         raw_lines = f.readlines()
+
+    # Preprocess if markdown
+    if input_path.suffix.lower() == '.md':
+        print(f"ℹ️ Detected Markdown file. Removing frontmatter and transforming headers...")
+        raw_lines = preprocess_markdown(raw_lines)
 
     cleaned_paragraphs = clean_text(raw_lines)
     write_output(input_path, cleaned_paragraphs)
