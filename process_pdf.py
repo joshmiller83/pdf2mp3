@@ -5,9 +5,33 @@ import sys
 import re
 from pathlib import Path
 
-def run_split_pdf(pdf_path: Path, output_dir: Path):
+import argparse
+import subprocess
+import sys
+import re
+from pathlib import Path
+
+def run_split_pdf(pdf_path: Path, output_dir: Path, ocr: bool = False, 
+                  columns: int = 1, header_h: int = 0, footer_h: int = 0, 
+                  ocr_dry_run: bool = False, start_page: int = 0,
+                  auto_layout: bool = False, model_name: str = "publaynet"):
     print(f"📄 Splitting PDF: {pdf_path.name}")
-    subprocess.run([sys.executable, "split_pdf.py", str(pdf_path), str(output_dir)], check=True)
+    cmd = [sys.executable, "split_pdf.py", str(pdf_path), str(output_dir)]
+    
+    if ocr:
+        cmd.append("--ocr")
+        cmd.extend(["--columns", str(columns)])
+        cmd.extend(["--header-height", str(header_h)])
+        cmd.extend(["--footer-height", str(footer_h)])
+        if ocr_dry_run:
+            cmd.append("--dry-run")
+        if start_page > 0:
+            cmd.extend(["--start-page", str(start_page)])
+        if auto_layout:
+            cmd.append("--auto-layout")
+            cmd.extend(["--model", model_name])
+            
+    subprocess.run(cmd, check=True)
 
 def page_num(p: Path) -> int:
     m = re.search(r'(\d+)(?=\.txt$)', p.name)
@@ -43,6 +67,16 @@ def main():
     parser.add_argument("--tempdir", default="temp_txt", help="Where to store extracted .txt files")
     parser.add_argument("--outdir", default="audio_output", help="Where to store generated MP3s")
     parser.add_argument("--dry-run", action="store_true", help="Preview groups and exit (no audio generation)")
+    
+    # OCR Options
+    parser.add_argument("--ocr", action="store_true", help="Enable OCR (pypdfium2 + tesseract)")
+    parser.add_argument("--columns", type=int, default=1, help="Number of columns to split page into (OCR only). Default: 1")
+    parser.add_argument("--header-height", type=int, default=0, help="Pixels to crop from top (OCR only). Default: 0")
+    parser.add_argument("--footer-height", type=int, default=0, help="Pixels to crop from bottom (OCR only). Default: 0")
+    parser.add_argument("--ocr-dry-run", action="store_true", help="OCR Dry run: save preview images of first 5 pages and exit")
+    parser.add_argument("--auto-layout", action="store_true", help="Use Deep Learning to detect layout (auto columns/header/footer)")
+    parser.add_argument("--model", default="publaynet", choices=["publaynet", "prima"], help="Layout model: 'publaynet' (academic/scientific) or 'prima' (magazines/reports). Default: publaynet")
+
     args = parser.parse_args()
 
     pdf_path = Path(args.pdf).expanduser()
@@ -52,7 +86,25 @@ def main():
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # 1) Split PDF into per-page .txt using your existing script
-    run_split_pdf(pdf_path, temp_dir)
+    # Use skip as start_page ONLY for dry-run to avoid double-skipping in full run
+    start_page = args.skip if args.ocr_dry_run else 0
+    
+    run_split_pdf(
+        pdf_path, 
+        temp_dir, 
+        ocr=args.ocr, 
+        columns=args.columns, 
+        header_h=args.header_height, 
+        footer_h=args.footer_height,
+        ocr_dry_run=args.ocr_dry_run,
+        start_page=start_page,
+        auto_layout=args.auto_layout,
+        model_name=args.model
+    )
+
+    if args.ocr_dry_run:
+        print(f"\n✅ OCR Dry Run complete. Preview images saved in: {temp_dir}/ocr_preview")
+        return
 
     # 2) Build fixed-size groups with numeric sort + skip
     groups, pad = group_text_files(temp_dir, args.group, args.skip)

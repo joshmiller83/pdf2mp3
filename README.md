@@ -58,7 +58,24 @@ And download the required NLTK tokenizers (only once):
 python -c "import nltk; nltk.download('punkt'); nltk.download('punkt_tab')"
 ```
 
-### 4. Ensure `ffmpeg` is available
+### 4. OCR & Layout Analysis Setup (Optional)
+
+For advanced PDF processing (scanned documents, complex multi-column layouts), you can enable OCR and Deep Learning layout detection.
+
+**System Dependencies:**
+Install Tesseract OCR engine:
+- macOS: `brew install tesseract`
+- Ubuntu: `sudo apt install tesseract-ocr`
+
+**Python Dependencies:**
+These are heavy dependencies (includes PyTorch). It is recommended to install them in order:
+```bash
+pip install torch torchvision
+pip install "layoutparser[ocr]" pypdfium2
+pip install "git+https://github.com/facebookresearch/detectron2.git" --no-build-isolation
+```
+
+### 5. Ensure `ffmpeg` is available
 
 Install via Homebrew on macOS:
 
@@ -95,6 +112,20 @@ python process_pdf.py ~/Downloads/wellarchitected-security-pillar.pdf \
 | `--group 8` | Groups 8 pages at a time into one `.mp3` (e.g. `pages_007-014.mp3`)      |
 | `--speed`   | Speaks at 1.75x speed (range: 0.5 to 2.0)                                |
 | `--outdir`  | Saves the generated audio files into a clean output folder               |
+
+### 📷 Advanced: OCR and Auto-Layout
+
+For scanned PDFs or complex layouts (multi-column, headers/footers):
+
+```bash
+python process_pdf.py your_document.pdf --ocr --auto-layout
+```
+
+| Flag            | Description                                                                 |
+| --------------- | --------------------------------------------------------------------------- |
+| `--ocr`         | Enables OCR-based extraction (requires Tesseract).                          |
+| `--auto-layout` | Uses Deep Learning to detect columns and remove headers/footers automatically. |
+| `--ocr-dry-run` | Processes first 5 pages and saves preview images to check layout detection. |
 
 ## 🧪 Preview Mode
 

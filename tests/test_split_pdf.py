@@ -58,6 +58,16 @@ class TestCleanPdfText:
         """Test that strings with only whitespace return empty string"""
         assert clean_pdf_text("   \n\n   ") == ""
 
+    def test_ai_ocr_fixes(self):
+        """Test that common AI OCR misidentifications are fixed"""
+        raw_text = "Al is the future. OpenAl is leading. El is also a mistake."
+        expected = "AI is the future. OpenAI is leading. AI is also a mistake."
+        assert clean_pdf_text(raw_text) == expected
+
+        # Ensure it doesn't match inside other words
+        raw_text = "Actually, Always, Aluminum, and Elephant are fine."
+        assert clean_pdf_text(raw_text) == raw_text
+
 
 class TestExtractSentencesFromPdf:
     """Test suite for extract_sentences_from_pdf function"""
@@ -96,8 +106,8 @@ class TestExtractSentencesFromPdf:
 
         extract_sentences_from_pdf("fake.pdf", temp_output_dir)
 
-        # Check that 3 files were created
-        assert len(os.listdir(temp_output_dir)) == 3
+        # Check that 4 files were created (page_1, page_2, page_3 + full_text.txt)
+        assert len(os.listdir(temp_output_dir)) == 4
         assert os.path.exists(os.path.join(temp_output_dir, "page_1.txt"))
         assert os.path.exists(os.path.join(temp_output_dir, "page_2.txt"))
         assert os.path.exists(os.path.join(temp_output_dir, "page_3.txt"))
@@ -178,7 +188,8 @@ class TestExtractSentencesFromPdf:
 
         extract_sentences_from_pdf("fake.pdf", temp_output_dir)
 
-        # Check files are named page_1.txt through page_10.txt
+        # Check files are named page_1.txt through page_10.txt (+ full_text.txt)
+        assert len(os.listdir(temp_output_dir)) == 11
         for i in range(1, 11):
             assert os.path.exists(os.path.join(temp_output_dir, f"page_{i}.txt"))
 
