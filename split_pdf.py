@@ -84,8 +84,9 @@ def process_page_image(page, columns: int, header_h: int, footer_h: int):
     return column_images
 
 class TextQualityFilter:
-    def __init__(self):
+    def __init__(self, disable_line_length_filter: bool = False):
         self.line_lengths = []
+        self.disable_line_length_filter = disable_line_length_filter
         
     def _get_stats(self):
         if not self.line_lengths:
@@ -115,6 +116,9 @@ class TextQualityFilter:
             return False, f"Low alphanumeric density: {ratio:.2f}"
             
         # 2. Line Length Outlier Check
+        if self.disable_line_length_filter:
+             return True, "OK"
+
         # Calculate average line length for this block
         lines = [l for l in text.split('\n') if l.strip()]
         if not lines:
@@ -180,7 +184,8 @@ def extract_sentences_from_pdf(pdf_path: str, output_dir: str,
                              ocr: bool = False, columns: int = 1, 
                              header_h: int = 0, footer_h: int = 0, 
                              dry_run: bool = False, start_page: int = 0,
-                             auto_layout: bool = False, model_name: str = "publaynet"):
+                             auto_layout: bool = False, model_name: str = "publaynet",
+                             no_filter: bool = False):
     
     if ocr and not OCR_AVAILABLE:
         print("Error: OCR dependencies (pypdfium2, pytesseract, Pillow) not found.")
@@ -194,7 +199,7 @@ def extract_sentences_from_pdf(pdf_path: str, output_dir: str,
     output_path.mkdir(parents=True, exist_ok=True)
     
     # Initialize Text Quality Filter
-    quality_filter = TextQualityFilter()
+    quality_filter = TextQualityFilter(disable_line_length_filter=no_filter)
 
     if ocr:
         print(f"📷 Processing with OCR: {pdf_path}")
@@ -381,6 +386,7 @@ if __name__ == "__main__":
     parser.add_argument("--start-page", type=int, default=0, help="Start processing from this page number (0-indexed)")
     parser.add_argument("--auto-layout", action="store_true", help="Use Deep Learning to detect layout (ignore manual cols/header)")
     parser.add_argument("--model", default="publaynet", choices=["publaynet", "prima"], help="Layout analysis model to use")
+    parser.add_argument("--no-filter", action="store_true", help="Disable line length filtering for OCR text blocks")
 
     args = parser.parse_args()
 
@@ -394,6 +400,7 @@ if __name__ == "__main__":
         dry_run=args.dry_run,
         start_page=args.start_page,
         auto_layout=args.auto_layout,
-        model_name=args.model
+        model_name=args.model,
+        no_filter=args.no_filter
     )
 

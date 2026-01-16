@@ -8,7 +8,55 @@ import sys
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from split_pdf import clean_pdf_text, extract_sentences_from_pdf
+from split_pdf import clean_pdf_text, extract_sentences_from_pdf, TextQualityFilter
+
+
+class TestTextQualityFilter:
+    """Test suite for TextQualityFilter class"""
+
+    def test_basic_filtering(self):
+        """Test that basic alphanumeric density check works"""
+        f = TextQualityFilter()
+        
+        # valid text
+        valid, reason = f.is_valid("This is a valid sentence.")
+        assert valid
+        assert reason == "OK"
+
+        # invalid text (symbols)
+        is_valid_result, reason = f.is_valid("... ... ...")
+        assert not is_valid_result
+        assert "Low alphanumeric density" in reason
+
+    def test_line_length_filtering(self):
+        """Test that line length outlier detection works"""
+        f = TextQualityFilter()
+        
+        # Train with some short lines
+        for _ in range(10):
+            f.add("Short line.")
+            
+        # Check that a very long line is rejected
+        long_line = "This is a very very very very very very very very very very very very very very very very very long line."
+        valid, reason = f.is_valid(long_line)
+        
+        assert not valid
+        assert "Line length outlier" in reason
+
+    def test_disable_line_length_filtering(self):
+        """Test that line length filtering can be disabled"""
+        f = TextQualityFilter(disable_line_length_filter=True)
+        
+        # Train with some short lines
+        for _ in range(10):
+            f.add("Short line.")
+            
+        # Check that a very long line is ACCEPTED now
+        long_line = "This is a very very very very very very very very very very very very very very very very very long line."
+        valid, reason = f.is_valid(long_line)
+        
+        assert valid
+        assert reason == "OK"
 
 
 class TestCleanPdfText:
